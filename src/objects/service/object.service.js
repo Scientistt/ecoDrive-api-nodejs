@@ -12,6 +12,12 @@ module.exports = {
         return myObject;
     },
 
+    async deleteObject(bucketName, objectKey) {
+        let decodedKey = Buffer.from(objectKey, 'base64').toString('utf-8');
+        let myObject = await awsService.deleteObject(bucketName, decodedKey);
+        return myObject;
+    },
+
     async restoreObject(bucketName, objectKey, params) {
         let decodedKey = Buffer.from(objectKey, 'base64').toString('utf-8');
         let myObject = await awsService.restoreObject(bucketName, decodedKey, params);
@@ -21,6 +27,11 @@ module.exports = {
     async downloadObject(bucketName, objectKey, params) {
         let decodedKey = Buffer.from(objectKey, 'base64').toString('utf-8');
         let myObject = await awsService.downloadObject(bucketName, decodedKey, params);
+        return myObject;
+    },
+
+    async uploadObject(bucketName, objectKey, file) {
+        let myObject = await awsService.uploadObject(bucketName, objectKey, file);
         return myObject;
     },
 

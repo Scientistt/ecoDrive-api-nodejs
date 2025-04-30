@@ -7,14 +7,16 @@ const {
     ListObjectsV2Command,
     HeadObjectCommand,
     RestoreObjectCommand,
-    GetObjectCommand
+    GetObjectCommand,
+    PutObjectCommand,
+    DeleteObjectCommand
 } = require("@aws-sdk/client-s3");
-
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const fs = require('fs');
+const { env } = require("process");
 
 const paginationService = require("./pagination.service");
 
-const { env } = require("process");
 
 const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : 'us-east-1';
 const AWS_ACCESS_KEY = env.AWS_ACCESS_KEY ? env.AWS_ACCESS_KEY : 'us-east-1';
@@ -203,18 +205,20 @@ module.exports = {
                 tier: result.StorageClass || null,
                 restore: translateRestoreMessage(result.Restore || null),
             };
+        } catch (error) {
+            return { error: error }
+        }
+    },
 
-            res.json({
-                bucket,
-                key,
-                size: result.ContentLength,
-                contentType: result.ContentType,
-                lastModified: result.LastModified,
-                eTag: result.ETag,
-                metadata: result.Metadata || {},
-                serverSideEncryption: result.ServerSideEncryption || null,
-                storageClass: result.StorageClass || null
+
+    async deleteObject(bucketName, objectKey) {
+        try {
+            const command = new DeleteObjectCommand({
+                Bucket: bucketName,
+                Key: objectKey
             });
+
+            return await s3Client.send(command);
         } catch (error) {
             return { error: error }
         }
@@ -237,10 +241,9 @@ module.exports = {
                 }
             });
 
-            const result = await s3Client.send(command);
+            await s3Client.send(command);
 
-
-            return {};
+            return module.exports.getObjectInfo(bucketName, objectKey);
 
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
@@ -267,6 +270,28 @@ module.exports = {
             return {
                 url: url
             };
+
+        } catch (error) {
+            if (error.name === "RestoreAlreadyInProgress") {
+                return { error: new Error('Solicitação já está em andamento') };
+            } else {
+                return { error: error };
+            }
+        }
+    },
+
+    async uploadObject(bucketName, objectKey, file) {
+        try {
+            const fileStream = fs.createReadStream(file.path);
+            const command = new PutObjectCommand({
+                Bucket: bucketName,
+                Key: objectKey,
+                Body: fileStream,
+                ContentType: file.mimetype,
+                StorageClass: "DEEP_ARCHIVE"
+            });
+            await s3Client.send(command);
+            return module.exports.getObjectInfo(bucketName, objectKey);
 
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
