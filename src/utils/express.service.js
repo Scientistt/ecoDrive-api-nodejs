@@ -11,26 +11,32 @@ const HTTP_METHODS = {
     POST: {
         name: "Post",
         color: `${CMD_STYLE.BRIGHT_GREEN}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
     GET: {
         name: "Get",
         color: `${CMD_STYLE.BRIGHT_CYAN}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
     PUT: {
         name: "Put",
         color: `${CMD_STYLE.BRIGHT_YELLOW}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
     PATCH: {
         name: "Patch",
         color: `${CMD_STYLE.BRIGHT_MAGENTA}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
     DELETE: {
         name: "Delete",
         color: `${CMD_STYLE.BRIGHT_RED}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
     DEFAULT: {
         name: "???",
         color: `${CMD_STYLE.DEFAULT}${CMD_STYLE.ITALIC}`,
+        color_after: CMD_STYLE.DEFAULT
     },
 };
 
@@ -46,22 +52,29 @@ const printRoutes = (prefix, router) => {
         }
 };
 
+let printedTopLevelPaths = {};
+
 const importRoutes = (server, path, topLevel) => {
     fs.readdirSync(path).forEach((name) => {
         if (fs.lstatSync(`${path}/${name}`).isDirectory()) return importRoutes(server, `${path}/${name}`, topLevel);
         else
             try {
                 if (`${name}`.endsWith("router.js")) {
+                    if (!printedTopLevelPaths.hasOwnProperty(topLevel)) {
+                        printedTopLevelPaths[topLevel] = true;
+                        if (PRINT_ROUTES_PATHS) console.log(`\n\t${CMD_STYLE.BG_WHITE}${CMD_STYLE.BOLD}   ${topLevel.toUpperCase()}   ${CMD_STYLE.DEFAULT}`);
+                    }
                     ++importedRouterFiles;
                     if (PRINT_ROUTES_PATHS) console.log(`\n\t${CMD_STYLE.ITALIC}${CMD_STYLE.YELLOW}${CMD_STYLE.DIM}${path}/${name}${CMD_STYLE.DEFAULT}`);
-                    server.use(`/${topLevel}`, require(`../.${path}/${name}`));
-                    printRoutes(`/${topLevel}`, require(`../.${path}/${name}`));
+                    server.use(require(`../.${path}/${name}`));
+                    printRoutes(``, require(`../.${path}/${name}`));
                 } else {
                     // skipping...
                 }
             } catch (error) {
                 RouterFileErrors++;
                 console.log(`\t${CMD_STYLE.UNDERLINE}${CMD_STYLE.RED}Error at ${CMD_STYLE.ITALIC}${CMD_STYLE.BOLD}${path}/${name}${CMD_STYLE.DEFAULT}: ${CMD_STYLE.RED}${error.message.toString()}${CMD_STYLE.DEFAULT}.`);
+                console.error(error)
             }
     });
 };
@@ -71,21 +84,19 @@ let importedRoutes = 0;
 let RouterFileErrors = 0;
 
 module.exports = {
+
+    getHttpMethodList() {
+        return HTTP_METHODS;
+    },
     printServerUpStatus() {
-        console.log(
-            `\t[Express] Imported ${importedRouterFiles > 0 ? CMD_STYLE.GREEN : CMD_STYLE.YELLOW}${importedRouterFiles}${CMD_STYLE.DEFAULT} file${importedRouterFiles > 1 ? "s" : ""} with a total of ${importedRoutes > 0 ? CMD_STYLE.GREEN : CMD_STYLE.YELLOW}${importedRoutes}${
-                CMD_STYLE.DEFAULT
-            } routes. ${RouterFileErrors > 0 ? `${CMD_STYLE.BG_BRIGHT_RED}${CMD_STYLE.BOLD} ${RouterFileErrors} file${RouterFileErrors > 1 ? "s" : ""} with errors ${CMD_STYLE.DEFAULT}` : `${CMD_STYLE.GREEN}No errors found.${CMD_STYLE.DEFAULT}`}`
-        );
+        console.log(`\t[Express] Imported ${CMD_STYLE.BOLD}${importedRouterFiles > 0 ? CMD_STYLE.BRIGHT_GREEN : CMD_STYLE.BRIGHT_YELLOW}${importedRouterFiles} file${importedRouterFiles > 1 ? "s" : ""}${CMD_STYLE.DEFAULT} with a total of ${CMD_STYLE.BOLD}${importedRoutes > 0 ? CMD_STYLE.BRIGHT_GREEN : CMD_STYLE.BRIGHT_YELLOW}${importedRoutes} routes${CMD_STYLE.DEFAULT}. ${RouterFileErrors > 0 ? `${CMD_STYLE.BG_BRIGHT_RED}${CMD_STYLE.BOLD} ${RouterFileErrors} file${RouterFileErrors > 1 ? "s" : ""} with errors ${CMD_STYLE.DEFAULT}` : ``}`);
     },
 
     importRoutes(server, basePath) {
-        // console.log("\n\nexpress");
         fs.readdirSync(basePath).forEach((dirName) => {
-            if (PRINT_ROUTES_PATHS) console.log(`\n\t${CMD_STYLE.BG_WHITE}${CMD_STYLE.BOLD}   ${dirName.toUpperCase()}   ${CMD_STYLE.DEFAULT}`);
             try {
                 importRoutes(server, `${basePath}/${dirName}`, `${dirName}`);
-            } catch (error) {}
+            } catch (error) { }
         });
     },
 };
