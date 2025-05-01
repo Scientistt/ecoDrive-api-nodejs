@@ -19,7 +19,6 @@ const s3Client = new S3Client({
 
 const doesBucketExists = async (bucketName) => {
     try {
-        await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
         return true;
     } catch (err) {
         return { error: err };
@@ -36,13 +35,24 @@ const getBucketLocation = async (bucketName) => {
     }
 };
 
+const getBucketCreationDate = async (bucketName) => {
+    try {
+        const res = await s3Client.send(new ListBucketsCommand({}));
+        const bucket = res.Buckets.find((b) => b.Name === bucketName);
+
+        return bucket.CreationDate || "1857-04-18T01:00:00.000Z";
+    } catch (error) {
+        return "unavailable";
+    }
+};
+
 const getBucketTags = async (bucketName) => {
     try {
         const res = await s3Client.send(new GetBucketTaggingCommand({ Bucket: bucketName }));
 
         return res.TagSet || [];
     } catch (error) {
-        return "unavailable";
+        return [];
     }
 };
 
@@ -102,6 +112,7 @@ module.exports = {
             exists: true,
             region: await getBucketLocation(bucketName),
             tags: await getBucketTags(bucketName),
+            created_at: await getBucketCreationDate(bucketName),
             // ToDo: inserir mais informações úteis aqui
         };
 
