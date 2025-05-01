@@ -7,4 +7,4 @@ module.exports = {
         if (size > 0) return `:${name}([a-zA-Z0-9\-\.]+){${size}}`;
         return `:${name}([a-z0-9\-]+)`;
     },
-}
+};

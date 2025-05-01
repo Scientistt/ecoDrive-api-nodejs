@@ -1,33 +1,20 @@
-const {
-    S3Client,
-    ListBucketsCommand,
-    HeadBucketCommand,
-    GetBucketLocationCommand,
-    GetBucketTaggingCommand,
-    ListObjectsV2Command,
-    HeadObjectCommand,
-    RestoreObjectCommand,
-    GetObjectCommand,
-    PutObjectCommand,
-    DeleteObjectCommand
-} = require("@aws-sdk/client-s3");
+const { S3Client, ListBucketsCommand, HeadBucketCommand, GetBucketLocationCommand, GetBucketTaggingCommand, ListObjectsV2Command, HeadObjectCommand, RestoreObjectCommand, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const fs = require('fs');
+const fs = require("fs");
 const { env } = require("process");
 
 const paginationService = require("./pagination.service");
 
-
-const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : 'us-east-1';
-const AWS_ACCESS_KEY = env.AWS_ACCESS_KEY ? env.AWS_ACCESS_KEY : 'us-east-1';
-const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY ? env.AWS_SECRET_ACCESS_KEY : 'us-east-1';
+const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : "us-east-1";
+const AWS_ACCESS_KEY = env.AWS_ACCESS_KEY ? env.AWS_ACCESS_KEY : "us-east-1";
+const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY ? env.AWS_SECRET_ACCESS_KEY : "us-east-1";
 
 const s3Client = new S3Client({
     region: AWS_REGION,
     credentials: {
         accessKeyId: AWS_ACCESS_KEY,
-        secretAccessKey: AWS_SECRET_ACCESS_KEY
-    }
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+    },
 });
 
 const doesBucketExists = async (bucketName) => {
@@ -35,20 +22,19 @@ const doesBucketExists = async (bucketName) => {
         await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
         return true;
     } catch (err) {
-
-        return { error: err }
+        return { error: err };
     }
-}
+};
 
 const getBucketLocation = async (bucketName) => {
     try {
         const res = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucketName }));
 
-        return res.LocationConstraint || 'us-east-1';
+        return res.LocationConstraint || "us-east-1";
     } catch (error) {
-        return 'unavailable'
+        return "unavailable";
     }
-}
+};
 
 const getBucketTags = async (bucketName) => {
     try {
@@ -56,9 +42,9 @@ const getBucketTags = async (bucketName) => {
 
         return res.TagSet || [];
     } catch (error) {
-        return 'unavailable'
+        return "unavailable";
     }
-}
+};
 
 const translateRestoreMessage = (message) => {
     if (!message) {
@@ -66,7 +52,7 @@ const translateRestoreMessage = (message) => {
             status: "UNAVAILABLE",
             is_restoring: false,
             is_restored: false,
-            available_until: null
+            available_until: null,
         };
     }
 
@@ -74,21 +60,15 @@ const translateRestoreMessage = (message) => {
     const isComplete = /ongoing-request="false"/.test(message);
 
     const expiryMatch = message.match(/expiry-date="([^"]+)"/);
-    const expiresAt = expiryMatch
-        ? new Date(expiryMatch[1]).toISOString()
-        : null;
+    const expiresAt = expiryMatch ? new Date(expiryMatch[1]).toISOString() : null;
 
     return {
-        status: isOngoing
-            ? "RESTORING"
-            : isComplete
-                ? "RESTORED"
-                : "UNKNOWN",
+        status: isOngoing ? "RESTORING" : isComplete ? "RESTORED" : "UNKNOWN",
         is_restoring: isOngoing,
         is_restored: isComplete,
-        available_until: expiresAt
+        available_until: expiresAt,
     };
-}
+};
 
 module.exports = {
     async getS3Client() {
@@ -97,46 +77,40 @@ module.exports = {
 
     async listBuckets() {
         try {
-
             const command = new ListBucketsCommand({});
             const response = await s3Client.send(command);
             let buckets = [];
-            if (response['$metadata'].httpStatusCode === 200)
+            if (response["$metadata"].httpStatusCode === 200)
                 for (let i in response.Buckets)
                     buckets.push({
                         name: response.Buckets[i].Name,
-                        created_at: response.Buckets[i].CreationDate
+                        created_at: response.Buckets[i].CreationDate,
                     });
 
-            return paginationService.parseListToPagination({ limit: 0 }, { elements: buckets })
+            return paginationService.parseListToPagination({ limit: 0 }, { elements: buckets });
         } catch (error) {
             return { error: error };
         }
-
-
     },
 
     async getBucketInfo(bucketName) {
         let exists = await doesBucketExists(bucketName);
-        if (exists?.error)
-            return exists;
+        if (exists?.error) return exists;
 
         let bucket = {
             name: bucketName,
             exists: true,
             region: await getBucketLocation(bucketName),
-            tags: await getBucketTags(bucketName)
+            tags: await getBucketTags(bucketName),
             // ToDo: inserir mais informações úteis aqui
-        }
+        };
 
         return bucket;
-
     },
 
     async listBucketObjects(bucketName, pagination, filter = {}) {
         let exists = await doesBucketExists(bucketName);
-        if (exists?.error)
-            return exists;
+        if (exists?.error) return exists;
 
         try {
             let pgnatiion = paginationService.parsePagination(pagination);
@@ -144,45 +118,45 @@ module.exports = {
             const command = new ListObjectsV2Command({
                 Bucket: bucketName,
                 Prefix: filter.prefix,
-                Delimiter: '/',
+                Delimiter: filter.hasOwnProperty("tree") && filter.tree !== "" && filter.tree ? "/" : undefined,
                 MaxKeys: pgnatiion.limit === 0 ? undefined : pgnatiion.limit,
-                ContinuationToken: filter.page !== null && filter.page !== "" ? filter.page : undefined
+                ContinuationToken: filter.hasOwnProperty("page") && filter.page !== "" ? filter.page : undefined,
             });
 
             const response = await s3Client.send(command);
 
-            const dirs = response.CommonPrefixes?.map(p => {
+            const dirs =
+                response.CommonPrefixes?.map((p) => {
+                    return {
+                        kind: "dir",
+                        bucket: bucketName,
+                        name: p.Prefix,
+                        key: Buffer.from(p.Prefix).toString("base64").replace(/=/g, ""),
+                        _token: response.IsTruncated ? response.NextContinuationToken : null,
+                    };
+                }) || [];
 
-                return {
-                    kind: 'dir',
-                    bucket: bucketName,
-                    name: p.Prefix,
-                    key: Buffer.from(p.Prefix).toString('base64').replace(/=/g, ''),
-                    _token: response.IsTruncated ? response.NextContinuationToken : null,
-                }
-            }) || [];
-
-            const files = response.Contents?.map(obj => {
-
-                return {
-                    kind: 'file',
-                    bucket: bucketName,
-                    key: Buffer.from(obj.Key).toString('base64').replace(/=/g, ''),
-                    name: obj.Key,
-                    size: obj.Size,
-                    tier: obj.StorageClass,
-                    updated_at: obj.LastModified,
-                    _token: response.IsTruncated ? response.NextContinuationToken : null,
-                    // eTag: obj.ETag
-                }
-            }) || [];
-
+            const files =
+                response.Contents?.map((obj) => {
+                    return {
+                        kind: "file",
+                        bucket: bucketName,
+                        key: Buffer.from(obj.Key).toString("base64").replace(/=/g, ""),
+                        name: obj.Key,
+                        size: obj.Size,
+                        tier: obj.StorageClass,
+                        updated_at: obj.LastModified,
+                        _token: response.IsTruncated ? response.NextContinuationToken : null,
+                        restore: translateRestoreMessage(response.Restore || null),
+                        // eTag: obj.ETag
+                    };
+                }) || [];
 
             const dirsReady = paginationService.parseListToScrollPagination(pgnatiion, { elements: dirs.concat(files) });
 
             return dirsReady;
         } catch (error) {
-            return { error: error }
+            return { error: error };
         }
     },
 
@@ -190,14 +164,14 @@ module.exports = {
         try {
             const command = new HeadObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey
+                Key: objectKey,
             });
 
             const result = await s3Client.send(command);
             return {
                 bucket: bucketName,
                 name: objectKey,
-                key: Buffer.from(objectKey).toString('base64').replace(/=/g, ''),
+                key: Buffer.from(objectKey).toString("base64").replace(/=/g, ""),
                 size: result.ContentLength,
                 contentType: result.ContentType,
                 updated_at: result.LastModified,
@@ -206,21 +180,20 @@ module.exports = {
                 restore: translateRestoreMessage(result.Restore || null),
             };
         } catch (error) {
-            return { error: error }
+            return { error: error };
         }
     },
-
 
     async deleteObject(bucketName, objectKey) {
         try {
             const command = new DeleteObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey
+                Key: objectKey,
             });
 
             return await s3Client.send(command);
         } catch (error) {
-            return { error: error }
+            return { error: error };
         }
     },
 
@@ -236,18 +209,17 @@ module.exports = {
                 RestoreRequest: {
                     Days: days,
                     GlacierJobParameters: {
-                        Tier: tier
-                    }
-                }
+                        Tier: tier,
+                    },
+                },
             });
 
             await s3Client.send(command);
 
             return module.exports.getObjectInfo(bucketName, objectKey);
-
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
-                return { error: new Error('Solicitação já está em andamento') };
+                return { error: new Error("Solicitação já está em andamento") };
             } else {
                 return { error: error };
             }
@@ -260,20 +232,19 @@ module.exports = {
 
             const command = new GetObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey
+                Key: objectKey,
             });
 
             const url = await getSignedUrl(s3Client, command, {
-                expiresIn: expiresInSeconds
+                expiresIn: expiresInSeconds,
             });
 
             return {
-                url: url
+                url: url,
             };
-
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
-                return { error: new Error('Solicitação já está em andamento') };
+                return { error: new Error("Solicitação já está em andamento") };
             } else {
                 return { error: error };
             }
@@ -288,19 +259,16 @@ module.exports = {
                 Key: objectKey,
                 Body: fileStream,
                 ContentType: file.mimetype,
-                StorageClass: "DEEP_ARCHIVE"
+                StorageClass: "DEEP_ARCHIVE",
             });
             await s3Client.send(command);
             return module.exports.getObjectInfo(bucketName, objectKey);
-
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
-                return { error: new Error('Solicitação já está em andamento') };
+                return { error: new Error("Solicitação já está em andamento") };
             } else {
                 return { error: error };
             }
         }
-    }
-
-
-}
+    },
+};
