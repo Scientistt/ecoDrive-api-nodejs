@@ -5,15 +5,14 @@ const { upload } = require("../../utils/upload.service");
 
 const { listObjects, getObjectInfo, restoreObject, downloadObject, uploadObject, deleteObject } = require("../controller/object.controller");
 
-method.post(`/bucket/${name('bucketName')}/object`, init, upload.single('file'), uploadObject, end);
+method.post(`/bucket/${name("bucketName")}/object`, init, upload.single("file"), uploadObject, end);
 
-method.post(`/bucket/${name('bucketName')}/objects`, init, listObjects, end);
+method.post(`/bucket/${name("bucketName")}/objects`, init, listObjects, end);
 
-method.get(`/bucket/${name('bucketName')}/object/${name('objectKey')}`, init, getObjectInfo, downloadObject, end);
+method.get(`/bucket/${name("bucketName")}/object/${name("objectKey")}`, init, getObjectInfo, downloadObject, end);
 
-method.delete(`/bucket/${name('bucketName')}/object/${name('objectKey')}`, init, deleteObject, end);
+method.delete(`/bucket/${name("bucketName")}/object/${name("objectKey")}`, init, deleteObject, end);
 
-method.post(`/bucket/${name('bucketName')}/object/${name('objectKey')}/restore`, init, restoreObject, end);
-
+method.post(`/bucket/${name("bucketName")}/object/${name("objectKey")}/restore`, init, restoreObject, end);
 
 module.exports = method;

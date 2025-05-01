@@ -1,8 +1,8 @@
 const objectService = require("../service/object.service");
-const { end } = require('../../utils/request.service');
-const FEEDBACK = require('../../utils/feedback.service').getFeedbacks();
+const { end } = require("../../utils/request.service");
+const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 
-const fs = require('fs');
+const fs = require("fs");
 
 module.exports = {
     async listObjects(req, res, next) {
@@ -77,20 +77,20 @@ module.exports = {
     async uploadObject(req, res, next) {
         if (!req.file) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
-            req.response.meta.error = new Error('Invalid file');
+            req.response.meta.error = new Error("Invalid file");
             return end(req, res);
         }
 
         const { bucket, name } = req.body;
         const file = req.file;
 
-        let buckets = await objectService.getObjectInfo(req.params.bucketName, Buffer.from(name).toString('base64').replace(/=/g, ''));
+        let buckets = await objectService.getObjectInfo(req.params.bucketName, Buffer.from(name).toString("base64").replace(/=/g, ""));
 
         if (!buckets.error) {
             fs.unlinkSync(file.path);
 
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
-            req.response.meta.error = new Error('Nome ja está em uso');
+            req.response.meta.error = new Error("Nome ja está em uso");
             return end(req, res);
         }
 

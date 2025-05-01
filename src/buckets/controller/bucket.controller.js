@@ -1,6 +1,6 @@
 const bucketService = require("../service/bucket.service");
-const { end } = require('../../utils/request.service');
-const FEEDBACK = require('../../utils/feedback.service').getFeedbacks();
+const { end } = require("../../utils/request.service");
+const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 
 module.exports = {
     async listBuckets(req, res, next) {
