@@ -15,7 +15,7 @@ module.exports = {
         let response = {};
 
         response.elements = obj.elements;
-        response.totalElements = pgnation.limit === 0 ? obj.elements.length : obj.elements[0]?.hasOwnProperty("_count") ? obj.elements[0]._count : 0;
+        response.totalElements = pgnation.limit === 0 ? obj.elements.length : obj.elements[0]?.hasOwnProperty("_count") ? obj.elements[0]._count : obj.elements.length;
         response.limit = pgnation.limit === 0 ? obj.elements.length : pgnation.limit;
         response.totalPages = pgnation.limit === 0 ? 1 : Math.ceil(response.totalElements / pgnation.limit);
         response.page = pgnation.limit === 0 ? 1 : pgnation.page;

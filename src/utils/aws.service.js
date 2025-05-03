@@ -85,19 +85,26 @@ module.exports = {
         return s3Client;
     },
 
-    async listBuckets() {
+    async listBuckets(filter, pagination) {
         try {
+            //ToDo: Isso aqui não existe, mas depois eu removo
+            let limit = pagination?.limit || 0;
+
             const command = new ListBucketsCommand({});
             const response = await s3Client.send(command);
             let buckets = [];
-            if (response["$metadata"].httpStatusCode === 200)
-                for (let i in response.Buckets)
+            if (response["$metadata"].httpStatusCode === 200) {
+                let bucketCount = 1;
+                for (let i in response.Buckets) {
                     buckets.push({
                         name: response.Buckets[i].Name,
                         created_at: response.Buckets[i].CreationDate,
                     });
+                    if (bucketCount++ === limit && limit !== 0) break;
+                }
+            }
 
-            return paginationService.parseListToPagination({ limit: 0 }, { elements: buckets });
+            return paginationService.parseListToPagination(pagination, { elements: buckets });
         } catch (error) {
             return { error: error };
         }
@@ -163,6 +170,7 @@ module.exports = {
                     };
                 }) || [];
 
+            // return paginationService.parseListToPagination(pgnatiion, { elements: dirs.concat(files) });
             const dirsReady = paginationService.parseListToScrollPagination(pgnatiion, { elements: dirs.concat(files) });
 
             return dirsReady;

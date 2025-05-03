@@ -5,6 +5,7 @@ const { name } = require("../../utils/urlParams.service");
 const { listBuckets, getBucketInfo } = require("../controller/bucket.controller");
 
 method.post(`/buckets`, init, listBuckets, end);
+
 method.get(`/bucket/${name("bucketName")}`, init, getBucketInfo, end);
 
 module.exports = method;
