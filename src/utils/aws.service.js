@@ -50,7 +50,10 @@ const getBucketTags = async (bucketName) => {
     try {
         const res = await s3Client.send(new GetBucketTaggingCommand({ Bucket: bucketName }));
 
-        return res.TagSet || [];
+        return (res.TagSet || []).map((tag) => ({
+            key: tag.Key,
+            value: tag.Value,
+        }));
     } catch (error) {
         return [];
     }
