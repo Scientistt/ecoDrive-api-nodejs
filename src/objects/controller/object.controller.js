@@ -6,7 +6,7 @@ const fs = require("fs");
 
 module.exports = {
     async listObjects(req, res, next) {
-        let buckets = await objectService.listObjects(req.params.bucketName, req.body.pagination, req.body.filter);
+        const buckets = await objectService.listObjects(req.params.bucketName, req.body.pagination, req.body.filter);
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.ERROR;
@@ -20,7 +20,7 @@ module.exports = {
     },
 
     async getObjectInfo(req, res, next) {
-        let buckets = await objectService.getObjectInfo(req.params.bucketName, req.params.objectKey);
+        const buckets = await objectService.getObjectInfo(req.params.bucketName, req.params.objectKey);
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -34,7 +34,7 @@ module.exports = {
     },
 
     async deleteObject(req, res, next) {
-        let buckets = await objectService.deleteObject(req.params.bucketName, req.params.objectKey);
+        const buckets = await objectService.deleteObject(req.params.bucketName, req.params.objectKey);
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -48,7 +48,7 @@ module.exports = {
     },
 
     async restoreObject(req, res, next) {
-        let buckets = await objectService.restoreObject(req.params.bucketName, req.params.objectKey, req.body);
+        const buckets = await objectService.restoreObject(req.params.bucketName, req.params.objectKey, req.body);
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -61,7 +61,7 @@ module.exports = {
     },
 
     async downloadObject(req, res, next) {
-        let buckets = await objectService.downloadObject(req.params.bucketName, req.params.objectKey, req.body);
+        const buckets = await objectService.downloadObject(req.params.bucketName, req.params.objectKey, req.body);
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -84,7 +84,10 @@ module.exports = {
         const { bucket, name } = req.body;
         const file = req.file;
 
-        let buckets = await objectService.getObjectInfo(req.params.bucketName, Buffer.from(name).toString("base64").replace(/=/g, ""));
+        const buckets = await objectService.getObjectInfo(
+            req.params.bucketName,
+            Buffer.from(name).toString("base64").replace(/=/g, "")
+        );
 
         if (!buckets.error) {
             fs.unlinkSync(file.path);
@@ -94,7 +97,7 @@ module.exports = {
             return end(req, res);
         }
 
-        let object = await objectService.uploadObject(bucket, name, file);
+        const object = await objectService.uploadObject(bucket, name, file);
 
         fs.unlinkSync(file.path);
 
@@ -107,5 +110,5 @@ module.exports = {
         req.response.meta.feedback = FEEDBACK.CREATED;
         req.response.body.object = object;
         return next();
-    },
+    }
 };

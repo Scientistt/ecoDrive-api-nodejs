@@ -3,7 +3,14 @@ const { init, end } = require("../../utils/request.service");
 const { name } = require("../../utils/urlParams.service");
 const { upload } = require("../../utils/upload.service");
 
-const { listObjects, getObjectInfo, restoreObject, downloadObject, uploadObject, deleteObject } = require("../controller/object.controller");
+const {
+    listObjects,
+    getObjectInfo,
+    restoreObject,
+    downloadObject,
+    uploadObject,
+    deleteObject
+} = require("../controller/object.controller");
 
 method.post(`/bucket/${name("bucketName")}/object`, init, upload.single("file"), uploadObject, end);
 

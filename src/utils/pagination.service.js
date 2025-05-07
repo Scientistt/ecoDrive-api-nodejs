@@ -3,19 +3,32 @@ const DEFAULT_PAGINATION_PAGE = 1;
 
 module.exports = {
     parsePagination(pagination = {}) {
-        let obj = {};
-        obj.limit = pagination.hasOwnProperty("limit") ? (pagination.limit >= 0 ? parseInt(pagination.limit) : DEFAULT_PAGINATION_LIMIT) : DEFAULT_PAGINATION_LIMIT;
-        obj.page = pagination.hasOwnProperty("page") ? (pagination.page > 0 ? parseInt(pagination.page) : DEFAULT_PAGINATION_PAGE) : DEFAULT_PAGINATION_PAGE;
+        const obj = {};
+        obj.limit = Object.prototype.hasOwnProperty.call(pagination, "limit")
+            ? pagination.limit >= 0
+                ? parseInt(pagination.limit)
+                : DEFAULT_PAGINATION_LIMIT
+            : DEFAULT_PAGINATION_LIMIT;
+        obj.page = Object.prototype.hasOwnProperty.call(pagination, "page")
+            ? pagination.page > 0
+                ? parseInt(pagination.page)
+                : DEFAULT_PAGINATION_PAGE
+            : DEFAULT_PAGINATION_PAGE;
         return obj;
     },
 
     parseListToPagination(pagination, obj) {
-        let pgnation = module.exports.parsePagination(pagination);
+        const pgnation = module.exports.parsePagination(pagination);
 
-        let response = {};
+        const response = {};
 
         response.elements = obj.elements;
-        response.totalElements = pgnation.limit === 0 ? obj.elements.length : obj.elements[0]?.hasOwnProperty("_count") ? obj.elements[0]._count : obj.elements.length;
+        response.totalElements =
+            pgnation.limit === 0
+                ? obj.elements.length
+                : Object.prototype.hasOwnProperty.call(obj.elements[0] || {}, "_count")
+                  ? obj.elements[0]._count
+                  : obj.elements.length;
         response.limit = pgnation.limit === 0 ? obj.elements.length : pgnation.limit;
         response.totalPages = pgnation.limit === 0 ? 1 : Math.ceil(response.totalElements / pgnation.limit);
         response.page = pgnation.limit === 0 ? 1 : pgnation.page;
@@ -29,15 +42,27 @@ module.exports = {
     },
 
     parseListToScrollPagination(pagination, obj) {
-        let pgnation = module.exports.parsePagination(pagination);
+        const pgnation = module.exports.parsePagination(pagination);
 
-        let response = {};
+        const response = {};
 
         response.elements = obj.elements;
         response.limit = pgnation.limit === 0 ? obj.elements.length : pgnation.limit;
-        response.hasNextPage = pgnation.limit === 0 ? false : obj.elements[0]?.hasOwnProperty("_token") ? (obj.elements[0]._token ? true : false) : false;
-        response.nextPage = pgnation.limit === 0 ? obj.elements.length : obj.elements[0]?.hasOwnProperty("_token") ? obj.elements[0]._token : 0;
+        response.hasNextPage =
+            pgnation.limit === 0
+                ? false
+                : Object.prototype.hasOwnProperty.call(obj.elements[0] || {}, "_token")
+                  ? obj.elements[0]._token
+                      ? true
+                      : false
+                  : false;
+        response.nextPage =
+            pgnation.limit === 0
+                ? obj.elements.length
+                : Object.hasOwn(obj.elements[0] || {}, "_token")
+                  ? obj.elements[0]._token
+                  : 0;
 
         return response;
-    },
+    }
 };

@@ -11,48 +11,57 @@ const HTTP_METHODS = {
     POST: {
         name: "Post",
         color: `${CMD_STYLE.BRIGHT_GREEN}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
+        color_after: CMD_STYLE.DEFAULT
     },
     GET: {
         name: "Get",
         color: `${CMD_STYLE.BRIGHT_CYAN}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
+        color_after: CMD_STYLE.DEFAULT
     },
     PUT: {
         name: "Put",
         color: `${CMD_STYLE.BRIGHT_YELLOW}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
+        color_after: CMD_STYLE.DEFAULT
     },
     PATCH: {
         name: "Patch",
         color: `${CMD_STYLE.BRIGHT_MAGENTA}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
+        color_after: CMD_STYLE.DEFAULT
     },
     DELETE: {
         name: "Delete",
         color: `${CMD_STYLE.BRIGHT_RED}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
+        color_after: CMD_STYLE.DEFAULT
     },
     DEFAULT: {
         name: "???",
         color: `${CMD_STYLE.DEFAULT}${CMD_STYLE.ITALIC}`,
-        color_after: CMD_STYLE.DEFAULT,
-    },
+        color_after: CMD_STYLE.DEFAULT
+    }
 };
 
 const printRoutes = (prefix, router) => {
     for (let i = 0; i < router.stack.length; i++)
-        for (let m in router.stack[i].route.methods) {
-            let method = HTTP_METHODS.hasOwnProperty(`${m}`.toUpperCase()) ? HTTP_METHODS[`${m}`.toUpperCase()] : HTTP_METHODS.DEFAULT;
-            let path = PRINT_ROUTES_REGEX
-                ? router.stack[i].route.path.replace(/\)/g, `)${CMD_STYLE.DEFAULT}`).replace(/:/g, `${CMD_STYLE.BRIGHT_WHITE}${CMD_STYLE.BOLD}$`)
-                : router.stack[i].route.path.replace(/ *\([^)]*\) */g, `${CMD_STYLE.DEFAULT}`).replace(/:/g, `${CMD_STYLE.BRIGHT_WHITE}${CMD_STYLE.BOLD}$`);
+        for (const m in router.stack[i].route.methods) {
+            const method = Object.prototype.hasOwnProperty.call(HTTP_METHODS, `${m}`.toUpperCase())
+                ? HTTP_METHODS[`${m}`.toUpperCase()]
+                : HTTP_METHODS.DEFAULT;
+            const path = PRINT_ROUTES_REGEX
+                ? router.stack[i].route.path
+                      .replace(/\)/g, `)${CMD_STYLE.DEFAULT}`)
+                      .replace(/:/g, `${CMD_STYLE.BRIGHT_WHITE}${CMD_STYLE.BOLD}$`)
+                : router.stack[i].route.path
+                      .replace(/ *\([^)]*\) */g, `${CMD_STYLE.DEFAULT}`)
+                      .replace(/:/g, `${CMD_STYLE.BRIGHT_WHITE}${CMD_STYLE.BOLD}$`);
             ++importedRoutes;
-            if (PRINT_ROUTES) console.log(`\t${`${importedRoutes}`.padStart(4, " ").padEnd(6, " ")}${`[${method.color}${method.name}${CMD_STYLE.DEFAULT}] `.padEnd(22, " ")}${prefix}${path}`);
+            if (PRINT_ROUTES)
+                console.log(
+                    `\t${`${importedRoutes}`.padStart(4, " ").padEnd(6, " ")}${`[${method.color}${method.name}${CMD_STYLE.DEFAULT}] `.padEnd(22, " ")}${prefix}${path}`
+                );
         }
 };
 
-let printedTopLevelPaths = {};
+const printedTopLevelPaths = {};
 
 const importRoutes = (server, path, topLevel) => {
     fs.readdirSync(path).forEach((name) => {
@@ -60,12 +69,18 @@ const importRoutes = (server, path, topLevel) => {
         else
             try {
                 if (`${name}`.endsWith("router.js")) {
-                    if (!printedTopLevelPaths.hasOwnProperty(topLevel)) {
+                    if (!Object.hasOwn(printedTopLevelPaths, topLevel)) {
                         printedTopLevelPaths[topLevel] = true;
-                        if (PRINT_ROUTES_PATHS) console.log(`\n\t${CMD_STYLE.BG_WHITE}${CMD_STYLE.BOLD}   ${topLevel.toUpperCase()}   ${CMD_STYLE.DEFAULT}`);
+                        if (PRINT_ROUTES_PATHS)
+                            console.log(
+                                `\n\t${CMD_STYLE.BG_WHITE}${CMD_STYLE.BOLD}   ${topLevel.toUpperCase()}   ${CMD_STYLE.DEFAULT}`
+                            );
                     }
                     ++importedRouterFiles;
-                    if (PRINT_ROUTES_PATHS) console.log(`\n\t${CMD_STYLE.ITALIC}${CMD_STYLE.YELLOW}${CMD_STYLE.DIM}${path}/${name}${CMD_STYLE.DEFAULT}`);
+                    if (PRINT_ROUTES_PATHS)
+                        console.log(
+                            `\n\t${CMD_STYLE.ITALIC}${CMD_STYLE.YELLOW}${CMD_STYLE.DIM}${path}/${name}${CMD_STYLE.DEFAULT}`
+                        );
                     server.use(require(`../.${path}/${name}`));
                     printRoutes(``, require(`../.${path}/${name}`));
                 } else {
@@ -73,7 +88,9 @@ const importRoutes = (server, path, topLevel) => {
                 }
             } catch (error) {
                 RouterFileErrors++;
-                console.log(`\t${CMD_STYLE.UNDERLINE}${CMD_STYLE.RED}Error at ${CMD_STYLE.ITALIC}${CMD_STYLE.BOLD}${path}/${name}${CMD_STYLE.DEFAULT}: ${CMD_STYLE.RED}${error.message.toString()}${CMD_STYLE.DEFAULT}.`);
+                console.log(
+                    `\t${CMD_STYLE.UNDERLINE}${CMD_STYLE.RED}Error at ${CMD_STYLE.ITALIC}${CMD_STYLE.BOLD}${path}/${name}${CMD_STYLE.DEFAULT}: ${CMD_STYLE.RED}${error.message.toString()}${CMD_STYLE.DEFAULT}.`
+                );
                 console.error(error);
             }
     });
@@ -99,7 +116,9 @@ module.exports = {
         fs.readdirSync(basePath).forEach((dirName) => {
             try {
                 importRoutes(server, `${basePath}/${dirName}`, `${dirName}`);
-            } catch (error) {}
+            } catch {
+                // Error handling can be added here if needed
+            }
         });
-    },
+    }
 };
