@@ -1,4 +1,16 @@
-const { S3Client, ListBucketsCommand, HeadBucketCommand, GetBucketLocationCommand, GetBucketTaggingCommand, ListObjectsV2Command, HeadObjectCommand, RestoreObjectCommand, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const {
+    S3Client,
+    ListBucketsCommand,
+    // HeadBucketCommand,
+    GetBucketLocationCommand,
+    GetBucketTaggingCommand,
+    ListObjectsV2Command,
+    HeadObjectCommand,
+    RestoreObjectCommand,
+    GetObjectCommand,
+    PutObjectCommand,
+    DeleteObjectCommand
+} = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const fs = require("fs");
 const { env } = require("process");
@@ -13,24 +25,16 @@ const s3Client = new S3Client({
     region: AWS_REGION,
     credentials: {
         accessKeyId: AWS_ACCESS_KEY,
-        secretAccessKey: AWS_SECRET_ACCESS_KEY,
-    },
-});
-
-const doesBucketExists = async (bucketName) => {
-    try {
-        return true;
-    } catch (err) {
-        return { error: err };
+        secretAccessKey: AWS_SECRET_ACCESS_KEY
     }
-};
+});
 
 const getBucketLocation = async (bucketName) => {
     try {
         const res = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucketName }));
 
         return res.LocationConstraint || "us-east-1";
-    } catch (error) {
+    } catch {
         return "unavailable";
     }
 };
@@ -41,7 +45,7 @@ const getBucketCreationDate = async (bucketName) => {
         const bucket = res.Buckets.find((b) => b.Name === bucketName);
 
         return bucket.CreationDate || "1857-04-18T01:00:00.000Z";
-    } catch (error) {
+    } catch {
         return "unavailable";
     }
 };
@@ -52,9 +56,9 @@ const getBucketTags = async (bucketName) => {
 
         return (res.TagSet || []).map((tag) => ({
             key: tag.Key,
-            value: tag.Value,
+            value: tag.Value
         }));
-    } catch (error) {
+    } catch {
         return [];
     }
 };
@@ -65,7 +69,7 @@ const translateRestoreMessage = (message) => {
             status: "UNAVAILABLE",
             is_restoring: false,
             is_restored: false,
-            available_until: null,
+            available_until: null
         };
     }
 
@@ -79,7 +83,7 @@ const translateRestoreMessage = (message) => {
         status: isOngoing ? "RESTORING" : isComplete ? "RESTORED" : "UNKNOWN",
         is_restoring: isOngoing,
         is_restored: isComplete,
-        available_until: expiresAt,
+        available_until: expiresAt
     };
 };
 
@@ -91,17 +95,17 @@ module.exports = {
     async listBuckets(filter, pagination) {
         try {
             //ToDo: Isso aqui não existe, mas depois eu removo
-            let limit = pagination?.limit || 0;
+            const limit = pagination?.limit || 0;
 
             const command = new ListBucketsCommand({});
             const response = await s3Client.send(command);
-            let buckets = [];
+            const buckets = [];
             if (response["$metadata"].httpStatusCode === 200) {
                 let bucketCount = 1;
-                for (let i in response.Buckets) {
+                for (const i in response.Buckets) {
                     buckets.push({
                         name: response.Buckets[i].Name,
-                        created_at: response.Buckets[i].CreationDate,
+                        created_at: response.Buckets[i].CreationDate
                     });
                     if (bucketCount++ === limit && limit !== 0) break;
                 }
@@ -109,20 +113,20 @@ module.exports = {
 
             return paginationService.parseListToPagination(pagination, { elements: buckets });
         } catch (error) {
-            return { error: error };
+            return { error };
         }
     },
 
     async getBucketInfo(bucketName) {
-        let exists = await doesBucketExists(bucketName);
-        if (exists?.error) return exists;
+        // const exists = await doesBucketExists(bucketName);
+        // if (exists?.error) return exists;
 
-        let bucket = {
+        const bucket = {
             name: bucketName,
             exists: true,
             region: await getBucketLocation(bucketName),
             tags: await getBucketTags(bucketName),
-            created_at: await getBucketCreationDate(bucketName),
+            created_at: await getBucketCreationDate(bucketName)
             // ToDo: inserir mais informações úteis aqui
         };
 
@@ -130,18 +134,21 @@ module.exports = {
     },
 
     async listBucketObjects(bucketName, pagination, filter = {}) {
-        let exists = await doesBucketExists(bucketName);
-        if (exists?.error) return exists;
+        // const exists = await doesBucketExists(bucketName);
+        // if (exists?.error) return exists;
 
         try {
-            let pgnatiion = paginationService.parsePagination(pagination);
+            const pgnatiion = paginationService.parsePagination(pagination);
 
             const command = new ListObjectsV2Command({
                 Bucket: bucketName,
                 Prefix: filter.prefix,
-                Delimiter: filter.hasOwnProperty("tree") && filter.tree !== "" && filter.tree ? "/" : undefined,
+                Delimiter:
+                    Object.prototype.hasOwnProperty.call(filter, "tree") && filter.tree !== "" && filter.tree
+                        ? "/"
+                        : undefined,
                 MaxKeys: pgnatiion.limit === 0 ? undefined : pgnatiion.limit,
-                ContinuationToken: filter.hasOwnProperty("page") && filter.page !== "" ? filter.page : undefined,
+                ContinuationToken: Object.hasOwn(filter, "page") && filter.page !== "" ? filter.page : undefined
             });
 
             const response = await s3Client.send(command);
@@ -153,7 +160,7 @@ module.exports = {
                         bucket: bucketName,
                         name: p.Prefix,
                         key: Buffer.from(p.Prefix).toString("base64").replace(/=/g, ""),
-                        _token: response.IsTruncated ? response.NextContinuationToken : null,
+                        _token: response.IsTruncated ? response.NextContinuationToken : null
                     };
                 }) || [];
 
@@ -168,17 +175,19 @@ module.exports = {
                         tier: obj.StorageClass,
                         updated_at: obj.LastModified,
                         _token: response.IsTruncated ? response.NextContinuationToken : null,
-                        restore: translateRestoreMessage(response.Restore || null),
+                        restore: translateRestoreMessage(response.Restore || null)
                         // eTag: obj.ETag
                     };
                 }) || [];
 
             // return paginationService.parseListToPagination(pgnatiion, { elements: dirs.concat(files) });
-            const dirsReady = paginationService.parseListToScrollPagination(pgnatiion, { elements: dirs.concat(files) });
+            const dirsReady = paginationService.parseListToScrollPagination(pgnatiion, {
+                elements: dirs.concat(files)
+            });
 
             return dirsReady;
         } catch (error) {
-            return { error: error };
+            return { error };
         }
     },
 
@@ -186,7 +195,7 @@ module.exports = {
         try {
             const command = new HeadObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey,
+                Key: objectKey
             });
 
             const result = await s3Client.send(command);
@@ -199,10 +208,10 @@ module.exports = {
                 updated_at: result.LastModified,
                 metadata: result.Metadata || {},
                 tier: result.StorageClass || null,
-                restore: translateRestoreMessage(result.Restore || null),
+                restore: translateRestoreMessage(result.Restore || null)
             };
         } catch (error) {
-            return { error: error };
+            return { error };
         }
     },
 
@@ -210,19 +219,19 @@ module.exports = {
         try {
             const command = new DeleteObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey,
+                Key: objectKey
             });
 
             return await s3Client.send(command);
         } catch (error) {
-            return { error: error };
+            return { error };
         }
     },
 
     async restoreObject(bucketName, objectKey, params) {
         try {
-            let days = params.days;
-            let tier = params.tier;
+            const days = params.days;
+            const tier = params.tier;
 
             const command = new RestoreObjectCommand({
                 Bucket: bucketName,
@@ -231,9 +240,9 @@ module.exports = {
                 RestoreRequest: {
                     Days: days,
                     GlacierJobParameters: {
-                        Tier: tier,
-                    },
-                },
+                        Tier: tier
+                    }
+                }
             });
 
             await s3Client.send(command);
@@ -243,32 +252,32 @@ module.exports = {
             if (error.name === "RestoreAlreadyInProgress") {
                 return { error: new Error("Solicitação já está em andamento") };
             } else {
-                return { error: error };
+                return { error };
             }
         }
     },
 
     async downloadObject(bucketName, objectKey, params) {
         try {
-            let expiresInSeconds = params.expiresInSeconds;
+            const expiresInSeconds = params.expiresInSeconds;
 
             const command = new GetObjectCommand({
                 Bucket: bucketName,
-                Key: objectKey,
+                Key: objectKey
             });
 
             const url = await getSignedUrl(s3Client, command, {
-                expiresIn: expiresInSeconds,
+                expiresIn: expiresInSeconds
             });
 
             return {
-                url: url,
+                url
             };
         } catch (error) {
             if (error.name === "RestoreAlreadyInProgress") {
                 return { error: new Error("Solicitação já está em andamento") };
             } else {
-                return { error: error };
+                return { error };
             }
         }
     },
@@ -281,7 +290,7 @@ module.exports = {
                 Key: objectKey,
                 Body: fileStream,
                 ContentType: file.mimetype,
-                StorageClass: "DEEP_ARCHIVE",
+                StorageClass: "DEEP_ARCHIVE"
             });
             await s3Client.send(command);
             return module.exports.getObjectInfo(bucketName, objectKey);
@@ -289,8 +298,8 @@ module.exports = {
             if (error.name === "RestoreAlreadyInProgress") {
                 return { error: new Error("Solicitação já está em andamento") };
             } else {
-                return { error: error };
+                return { error };
             }
         }
-    },
+    }
 };

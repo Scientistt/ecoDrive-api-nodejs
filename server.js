@@ -17,8 +17,10 @@ expressService.importRoutes(server, "./src");
 server.use(init, route404, end);
 
 httpServer.listen(env.PORT, () => {
-    let CMD_STYLE = cmdService.getCMDStyleCodes();
+    const CMD_STYLE = cmdService.getCMDStyleCodes();
     console.log("");
     expressService.printServerUpStatus();
-    console.log(`\t[NodeJs] ${CMD_STYLE.UNDERLINE}${CMD_STYLE.BOLD}listening on port ${CMD_STYLE.GREEN}${env.PORT}${CMD_STYLE.DEFAULT}\nRequests: `);
+    console.log(
+        `\t[NodeJs] ${CMD_STYLE.UNDERLINE}${CMD_STYLE.BOLD}listening on port ${CMD_STYLE.GREEN}${env.PORT}${CMD_STYLE.DEFAULT}\nRequests: `
+    );
 });

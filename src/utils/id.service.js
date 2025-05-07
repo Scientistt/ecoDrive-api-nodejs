@@ -5,9 +5,9 @@ const getRandomId = new shortId({ length: DEFAULT_SHORT_ID_LENGTH }).randomUUID;
 module.exports = {
     async getId(length = DEFAULT_SHORT_ID_LENGTH) {
         if (length !== DEFAULT_SHORT_ID_LENGTH) {
-            const { randomUUID } = new shortId({ length: length });
+            const { randomUUID } = new shortId({ length });
             return randomUUID();
         }
         return getRandomId();
-    },
+    }
 };

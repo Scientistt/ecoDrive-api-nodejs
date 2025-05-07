@@ -4,7 +4,7 @@ const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 
 module.exports = {
     async listBuckets(req, res, next) {
-        let buckets = await bucketService.listBuckets(req.body.filter, req.body.pagination);
+        const buckets = await bucketService.listBuckets(req.body.filter, req.body.pagination);
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.ERROR;
             req.response.meta.error = buckets.error;
@@ -17,7 +17,7 @@ module.exports = {
     },
 
     async getBucketInfo(req, res, next) {
-        let bucket = await bucketService.getBucketInfo(req.params.bucketName);
+        const bucket = await bucketService.getBucketInfo(req.params.bucketName);
         if (bucket.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
             req.response.meta.error = bucket.error;
@@ -27,5 +27,5 @@ module.exports = {
         req.response.meta.feedback = FEEDBACK.READ;
         req.response.body.bucket = bucket;
         return next();
-    },
+    }
 };

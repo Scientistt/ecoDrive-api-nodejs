@@ -47,10 +47,10 @@ const CMD_STYLE_CODES = {
     BG_BRIGHT_BLUE: "\x1b[104m",
     BG_BRIGHT_MAGENTA: "\x1b[105m",
     BG_BRIGHT_CYAN: "\x1b[106m",
-    BG_BRIGHT_WHITE: "\x1b[107m",
+    BG_BRIGHT_WHITE: "\x1b[107m"
 };
 module.exports = {
     getCMDStyleCodes() {
         return CMD_STYLE_CODES;
-    },
+    }
 };
