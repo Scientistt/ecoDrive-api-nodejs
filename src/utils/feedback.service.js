@@ -16,6 +16,9 @@ const FEEDBACK = {
     BAD_REQUEST: {
         http: httpStatusService.BAD_REQUEST
     },
+    FORBIDDEN: {
+        http: httpStatusService.FORBIDDEN
+    },
     ERROR: {
         http: httpStatusService.ERROR
     }
