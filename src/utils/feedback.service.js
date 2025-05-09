@@ -4,6 +4,9 @@ const FEEDBACK = {
     OK: {
         http: httpStatusService.OK
     },
+    VALIDATED: {
+        http: httpStatusService.OK
+    },
     CREATED: {
         http: httpStatusService.CREATED
     },

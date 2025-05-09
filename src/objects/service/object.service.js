@@ -1,8 +1,8 @@
 const awsService = require("../../utils/aws.service");
 
 module.exports = {
-    async listObjects(bucketName, pagination, filter) {
-        const myObject = await awsService.listBucketObjects(bucketName, pagination, filter);
+    async listObjects(supplier, bucketName, pagination, filter) {
+        const myObject = await awsService.listBucketObjects(supplier, bucketName, pagination, filter);
         return myObject;
     },
 

@@ -27,12 +27,29 @@ module.exports = {
         }
 
         req.response.meta.feedback = FEEDBACK.CREATED;
+        req.response.user = user;
         req.response.body.user = user;
         req.response.body.token = token;
         return next();
     },
 
     async isAuth(req, res, next) {
+        const { error, user } = await authService.isAuth(req, getClientIp(req));
+
+        if (error) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.token = { error };
+            req.response.body.user = { error };
+            return end(req, res);
+        }
+
+        req.response.meta.feedback = FEEDBACK.VALIDATED;
+        req.response.params.user = user;
+
+        return next();
+    },
+
+    async isAuthenticated(req, res, next) {
         const { error, user, token } = await authService.isAuth(req, getClientIp(req));
 
         if (error) {
@@ -42,7 +59,8 @@ module.exports = {
             return end(req, res);
         }
 
-        req.response.meta.feedback = FEEDBACK.CREATED;
+        req.response.meta.feedback = FEEDBACK.VALIDATED;
+        req.response.params.user = user;
         req.response.body.user = user;
         req.response.body.token = token;
         return next();

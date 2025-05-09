@@ -19,12 +19,14 @@ module.exports = {
 
         const defaultObj = {
             header: {},
+            user: {},
             meta: {
                 feedback: feedbackService.getFeedbacks().OK,
                 id: requestId,
                 timeStamp: new Date(),
                 timeSpent: process.hrtime()
             },
+            params: {},
             body: {}
         };
         req.response = defaultObj;

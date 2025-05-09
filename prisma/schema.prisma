@@ -37,7 +37,7 @@ model WhiteLabel {
   status             StatusEnum @default(A)
   description        String?
 
-  User_WhiteLabel User[] @relation(name: "User_WhiteLabel")
+  user User[] @relation(name: "User_WhiteLabel")
 
   @@index([status])
   @@index([name])
@@ -56,8 +56,12 @@ model User {
   email         String     @unique()
   whitelabel_id BigInt
 
-  User_WhiteLabel    WhiteLabel      @relation(fields: [whitelabel_id], references: [id], name: "User_WhiteLabel")
-  UserAuthToken_User UserAuthToken[] @relation(name: "UserAuthToken_User")
+  whitelabel WhiteLabel @relation(fields: [whitelabel_id], references: [id], name: "User_WhiteLabel")
+
+  auth_token      UserAuthToken[] @relation(name: "UserAuthToken_User")
+  account         Supplier[]      @relation(name: "Supplier_User")
+  account_created Supplier[]      @relation(name: "SupplierCreatedBy_User")
+  account_updated Supplier[]      @relation(name: "SupplierUpdatedBy_User")
 
   @@index([login])
   @@index([status])
@@ -79,7 +83,7 @@ model UserAuthToken {
   keep         Boolean    @default(false)
   user_id      BigInt
 
-  UserAuthToken_User User @relation(fields: [user_id], references: [id], name: "UserAuthToken_User")
+  user User @relation(fields: [user_id], references: [id], name: "UserAuthToken_User")
 
   @@index([created_at])
   @@index([updated_at])
@@ -89,6 +93,32 @@ model UserAuthToken {
   @@index([status])
   @@index([keep])
   @@map("ecodrive_user_auth_token")
+}
+
+model Supplier {
+  id                 BigInt     @id() @unique() @default(autoincrement())
+  slug               String     @unique() @default(uuid())
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  created_by_user_id BigInt
+  updated_at         DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_by_user_id BigInt?
+  name               String
+  status             StatusEnum @default(A)
+  description        String?
+  account_supplier   String
+  account_key        String
+  account_secret     String
+  user_id            BigInt
+
+  user            User  @relation(fields: [user_id], references: [id], name: "Supplier_User")
+  created_by_user User  @relation(fields: [created_by_user_id], references: [id], name: "SupplierCreatedBy_User")
+  updated_by_user User? @relation(fields: [updated_by_user_id], references: [id], name: "SupplierUpdatedBy_User")
+
+  @@index([account_supplier])
+  @@index([user_id])
+  @@index([name])
+  @@index([status])
+  @@map("ecodrive_supplier")
 }
 
 /**

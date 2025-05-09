@@ -110,7 +110,7 @@ module.exports = {
                     created_at: true,
                     status: true,
                     last_used_at: true,
-                    UserAuthToken_User: {
+                    user: {
                         select: {
                             id: true,
                             slug: true,
@@ -132,7 +132,7 @@ module.exports = {
                 };
             }
 
-            returnObj.user = userToken.UserAuthToken_User;
+            returnObj.user = userToken.user;
             returnObj.token = {
                 keep: userToken.keep,
                 status: userToken.status,

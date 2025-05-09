@@ -6,7 +6,12 @@ const fs = require("fs");
 
 module.exports = {
     async listObjects(req, res, next) {
-        const buckets = await objectService.listObjects(req.params.bucketName, req.body.pagination, req.body.filter);
+        const buckets = await objectService.listObjects(
+            req.response.params.supplier,
+            req.params.bucketName,
+            req.body.pagination,
+            req.body.filter
+        );
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.ERROR;
