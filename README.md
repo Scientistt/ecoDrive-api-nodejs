@@ -48,14 +48,14 @@ No arquivo `.env`:
 PORT=3001
 TZ=GMT+0
 
-PRINT_ROUTES="true"
-PRINT_ROUTES_PATHS="true"
-PRINT_ROUTES_REGEX="false"
-PRINT_REQUESTS="false"
+PRINT_ROUTES = "[boolean]"
+PRINT_ROUTES_PATHS = "[boolean]"
+PRINT_ROUTES_REGEX = "[boolean]"
+PRINT_REQUESTS = "[boolean]"
 
-AWS_REGION="us-east-1"
-AWS_ACCESS_KEY="MY-AWS-ACCESS-KEY"
-AWS_SECRET_ACCESS_KEY="MY-AWS-SECRET-ACCESS-KEY"
+DATABASE = "postgresql://[user]:[password]@[host]:[host]/[dbname]?schema=[schema]"
+CRYPTOGRAPHY_ROUNDS_OF_SALT = "[integer]"
+CRYPTOGRAPHY_SECRET = "[32 characters string]"
 ```
 
 ## 🖼️ Repositório do Frontend (Interface Web)

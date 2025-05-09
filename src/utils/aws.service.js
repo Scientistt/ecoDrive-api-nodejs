@@ -29,9 +29,9 @@ const s3Client = new S3Client({
     }
 });
 
-const getBucketLocation = async (bucketName) => {
+const getBucketLocation = async (supplier, bucketName) => {
     try {
-        const res = await s3Client.send(new GetBucketLocationCommand({ Bucket: bucketName }));
+        const res = await (await getS3Client(supplier)).send(new GetBucketLocationCommand({ Bucket: bucketName }));
 
         return res.LocationConstraint || "us-east-1";
     } catch {
@@ -39,9 +39,9 @@ const getBucketLocation = async (bucketName) => {
     }
 };
 
-const getBucketCreationDate = async (bucketName) => {
+const getBucketCreationDate = async (supplier, bucketName) => {
     try {
-        const res = await s3Client.send(new ListBucketsCommand({}));
+        const res = await (await getS3Client(supplier)).send(new ListBucketsCommand({}));
         const bucket = res.Buckets.find((b) => b.Name === bucketName);
 
         return bucket.CreationDate || "1857-04-18T01:00:00.000Z";
@@ -50,9 +50,9 @@ const getBucketCreationDate = async (bucketName) => {
     }
 };
 
-const getBucketTags = async (bucketName) => {
+const getBucketTags = async (supplier, bucketName) => {
     try {
-        const res = await s3Client.send(new GetBucketTaggingCommand({ Bucket: bucketName }));
+        const res = await (await getS3Client(supplier)).send(new GetBucketTaggingCommand({ Bucket: bucketName }));
 
         return (res.TagSet || []).map((tag) => ({
             key: tag.Key,
@@ -86,19 +86,25 @@ const translateRestoreMessage = (message) => {
         available_until: expiresAt
     };
 };
+const getS3Client = async (supplier) => {
+    return new S3Client({
+        region: AWS_REGION,
+        credentials: {
+            accessKeyId: supplier.account_key,
+            secretAccessKey: supplier.account_secret
+        }
+    });
+};
 
 module.exports = {
-    async getS3Client() {
-        return s3Client;
-    },
-
-    async listBuckets(filter, pagination) {
+    async listBuckets(supplier, filter, pagination) {
         try {
             //ToDo: Isso aqui não existe, mas depois eu removo
             const limit = pagination?.limit || 0;
 
             const command = new ListBucketsCommand({});
-            const response = await s3Client.send(command);
+            const response = await (await getS3Client(supplier)).send(command);
+
             const buckets = [];
             if (response["$metadata"].httpStatusCode === 200) {
                 let bucketCount = 1;
@@ -117,23 +123,23 @@ module.exports = {
         }
     },
 
-    async getBucketInfo(bucketName) {
+    async getBucketInfo(supplier, bucketName) {
         // const exists = await doesBucketExists(bucketName);
         // if (exists?.error) return exists;
 
         const bucket = {
             name: bucketName,
             exists: true,
-            region: await getBucketLocation(bucketName),
-            tags: await getBucketTags(bucketName),
-            created_at: await getBucketCreationDate(bucketName)
+            region: await getBucketLocation(supplier, bucketName),
+            tags: await getBucketTags(supplier, bucketName),
+            created_at: await getBucketCreationDate(supplier, bucketName)
             // ToDo: inserir mais informações úteis aqui
         };
 
         return bucket;
     },
 
-    async listBucketObjects(bucketName, pagination, filter = {}) {
+    async listBucketObjects(supplier, bucketName, pagination, filter = {}) {
         // const exists = await doesBucketExists(bucketName);
         // if (exists?.error) return exists;
 
@@ -151,7 +157,7 @@ module.exports = {
                 ContinuationToken: Object.hasOwn(filter, "page") && filter.page !== "" ? filter.page : undefined
             });
 
-            const response = await s3Client.send(command);
+            const response = await (await getS3Client(supplier)).send(command);
 
             const dirs =
                 response.CommonPrefixes?.map((p) => {
