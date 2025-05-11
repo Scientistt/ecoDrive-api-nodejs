@@ -22,5 +22,36 @@ module.exports = {
         } catch (err) {
             return parseError(err);
         }
+    },
+
+    async validateAccountCreationEmail(email) {
+        try {
+            const newUser = await db.User.findFirst({
+                where: { email },
+                select: {
+                    id: true
+                }
+            });
+
+            return !newUser;
+        } catch (err) {
+            return parseError(err);
+        }
+    },
+
+    async validateAccountCreationLogin(login) {
+        try {
+            const newUser = await db.User.findFirst({
+                where: { login },
+                select: {
+                    id: true
+                }
+            });
+
+            console.log("found: ", newUser);
+            return !newUser;
+        } catch (err) {
+            return parseError(err);
+        }
     }
 };
