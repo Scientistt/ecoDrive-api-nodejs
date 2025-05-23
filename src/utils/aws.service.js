@@ -99,6 +99,10 @@ const getS3Client = async (supplier) => {
 module.exports = {
     async listBuckets(supplier, filter, pagination) {
         try {
+            const hasToDownloadDetails = !!filter?.details;
+
+            console.log("Downloa details? ", hasToDownloadDetails);
+
             //ToDo: Isso aqui não existe, mas depois eu removo
             const limit = pagination?.limit || 0;
 
@@ -109,10 +113,19 @@ module.exports = {
             if (response["$metadata"].httpStatusCode === 200) {
                 let bucketCount = 1;
                 for (const i in response.Buckets) {
-                    buckets.push({
-                        name: response.Buckets[i].Name,
-                        created_at: response.Buckets[i].CreationDate
-                    });
+                    if (!hasToDownloadDetails)
+                        buckets.push({
+                            name: response.Buckets[i].Name,
+                            created_at: response.Buckets[i].CreationDate
+                        });
+                    else {
+                        const bucket = await module.exports.getBucketInfo(supplier, response.Buckets[i].Name);
+                        console.log("B: ", bucket);
+                        // --
+                        // --
+                        // --
+                        buckets.push(bucket);
+                    }
                     if (bucketCount++ === limit && limit !== 0) break;
                 }
             }
