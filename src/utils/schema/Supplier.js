@@ -1,5 +1,7 @@
 const { z } = require("zod");
+
 const allowedSuppliers = { aws: "aws", oracle: "Oracle" };
+
 const supplierSchema = z.object({
     name: z.string().min(1, "Nome é obrigatório"),
     description: z.string().optional(),

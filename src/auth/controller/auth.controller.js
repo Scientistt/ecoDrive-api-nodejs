@@ -37,9 +37,9 @@ module.exports = {
         const { error, user } = await authService.isAuth(req, getClientIp(req));
 
         if (error) {
-            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
-            req.response.body.token = { error };
-            req.response.body.user = { error };
+            req.response.meta.feedback = FEEDBACK.FORBIDDEN;
+            // req.response.body.token = { error };
+            // req.response.body.user = { error };
             return end(req, res);
         }
 

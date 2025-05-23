@@ -9,6 +9,7 @@ module.exports = {
             req.body.filter,
             req.body.pagination
         );
+
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.ERROR;
             req.response.meta.error = buckets.error;
