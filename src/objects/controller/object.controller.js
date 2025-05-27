@@ -2,6 +2,8 @@ const objectService = require("../service/object.service");
 const { end } = require("../../utils/request.service");
 const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 
+const ObjectSchema = require("../../utils/schema/Object");
+
 const fs = require("fs");
 
 module.exports = {
@@ -80,18 +82,28 @@ module.exports = {
     },
 
     async uploadObject(req, res, next) {
+        console.log("Arrived at uploadObject controller: ", req.file);
         if (!req.file) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
             req.response.meta.error = new Error("Invalid file");
             return end(req, res);
         }
 
-        const { bucket, name } = req.body;
+        // const { bucket, name } = req.body;
+
+        const validatedObject = ObjectSchema.validate({ ...req.body });
+
+        if (!validatedObject.success) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.user = { error: validatedObject.err };
+            return end(req, res);
+        }
+
         const file = req.file;
 
         const buckets = await objectService.getObjectInfo(
             req.params.bucketName,
-            Buffer.from(name).toString("base64").replace(/=/g, "")
+            Buffer.from(validatedObject.data.name).toString("base64").replace(/=/g, "")
         );
 
         if (!buckets.error) {
@@ -102,7 +114,13 @@ module.exports = {
             return end(req, res);
         }
 
-        const object = await objectService.uploadObject(bucket, name, file);
+        const object = await objectService.uploadObject({
+            supplier: req.response.params.supplier,
+            bucketName: req.params.bucketName,
+            objectKey: validatedObject.data.name,
+            file,
+            storage: validatedObject.data.storage
+        });
 
         fs.unlinkSync(file.path);
 

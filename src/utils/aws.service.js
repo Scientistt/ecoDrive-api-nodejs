@@ -9,25 +9,18 @@ const {
     RestoreObjectCommand,
     GetObjectCommand,
     PutObjectCommand,
-    DeleteObjectCommand
+    DeleteObjectCommand,
+    CompleteMultipartUploadCommandOutput
 } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const fs = require("fs");
 const { env } = require("process");
 
 const paginationService = require("./pagination.service");
 
+// ToDo: Save region on the supplier
 const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : "us-east-1";
-const AWS_ACCESS_KEY = env.AWS_ACCESS_KEY ? env.AWS_ACCESS_KEY : "us-east-1";
-const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY ? env.AWS_SECRET_ACCESS_KEY : "us-east-1";
-
-const s3Client = new S3Client({
-    region: AWS_REGION,
-    credentials: {
-        accessKeyId: AWS_ACCESS_KEY,
-        secretAccessKey: AWS_SECRET_ACCESS_KEY
-    }
-});
 
 const getBucketLocation = async (supplier, bucketName) => {
     try {
@@ -101,7 +94,7 @@ module.exports = {
         try {
             const hasToDownloadDetails = !!filter?.details;
 
-            console.log("Downloa details? ", hasToDownloadDetails);
+            // console.log("Downloa details? ", hasToDownloadDetails);
 
             //ToDo: Isso aqui não existe, mas depois eu removo
             const limit = pagination?.limit || 0;
@@ -120,7 +113,7 @@ module.exports = {
                         });
                     else {
                         const bucket = await module.exports.getBucketInfo(supplier, response.Buckets[i].Name);
-                        console.log("B: ", bucket);
+                        // console.log("B: ", bucket);
                         // --
                         // --
                         // --
@@ -210,14 +203,15 @@ module.exports = {
         }
     },
 
-    async getObjectInfo(bucketName, objectKey) {
+    // ToDo: IMplementar o uso do suplier dinâmico
+    async getObjectInfo({ supplier, bucketName, objectKey }) {
         try {
             const command = new HeadObjectCommand({
                 Bucket: bucketName,
                 Key: objectKey
             });
 
-            const result = await s3Client.send(command);
+            const result = await (await getS3Client(supplier)).send(command);
             return {
                 bucket: bucketName,
                 name: objectKey,
@@ -234,24 +228,23 @@ module.exports = {
         }
     },
 
-    async deleteObject(bucketName, objectKey) {
+    // ToDo: IMplementar o uso do suplier dinâmico
+    async deleteObject({ supplier, bucketName, objectKey }) {
         try {
             const command = new DeleteObjectCommand({
                 Bucket: bucketName,
                 Key: objectKey
             });
 
-            return await s3Client.send(command);
+            return (await getS3Client(supplier)).send(command);
         } catch (error) {
             return { error };
         }
     },
 
-    async restoreObject(bucketName, objectKey, params) {
+    // ToDo: IMplementar o uso do suplier dinâmico
+    async restoreObject({ supplier, bucketName, objectKey, days, tier }) {
         try {
-            const days = params.days;
-            const tier = params.tier;
-
             const command = new RestoreObjectCommand({
                 Bucket: bucketName,
                 Key: objectKey,
@@ -264,7 +257,7 @@ module.exports = {
                 }
             });
 
-            await s3Client.send(command);
+            (await getS3Client(supplier)).send(command);
 
             return module.exports.getObjectInfo(bucketName, objectKey);
         } catch (error) {
@@ -276,16 +269,15 @@ module.exports = {
         }
     },
 
-    async downloadObject(bucketName, objectKey, params) {
+    // ToDo: IMplementar o uso do suplier dinâmico
+    async downloadObject({ bucketName, objectKey, expiresInSeconds, supplier }) {
         try {
-            const expiresInSeconds = params.expiresInSeconds;
-
             const command = new GetObjectCommand({
                 Bucket: bucketName,
                 Key: objectKey
             });
 
-            const url = await getSignedUrl(s3Client, command, {
+            const url = await getSignedUrl(await getS3Client(supplier), command, {
                 expiresIn: expiresInSeconds
             });
 
@@ -301,7 +293,7 @@ module.exports = {
         }
     },
 
-    async uploadObject(bucketName, objectKey, file) {
+    async uploadObject({ supplier, bucketName, objectKey, file, storage }) {
         try {
             const fileStream = fs.createReadStream(file.path);
             const command = new PutObjectCommand({
@@ -309,16 +301,47 @@ module.exports = {
                 Key: objectKey,
                 Body: fileStream,
                 ContentType: file.mimetype,
-                StorageClass: "DEEP_ARCHIVE"
+                StorageClass: storage
             });
-            await s3Client.send(command);
-            return module.exports.getObjectInfo(bucketName, objectKey);
+            const response = await (await getS3Client(supplier)).send(command);
+            console.log("response: ", response);
+            return module.exports.getObjectInfo({ supplier, bucketName, objectKey });
         } catch (error) {
-            if (error.name === "RestoreAlreadyInProgress") {
-                return { error: new Error("Solicitação já está em andamento") };
-            } else {
-                return { error };
-            }
+            return { error };
+        }
+    },
+
+    async uploadObjectMP({ supplier, bucketName, objectKey, file, storage }) {
+        try {
+            const fileStream = fs.createReadStream(file.path);
+
+            console.log(`Starting upload`);
+            const upload = new Upload({
+                client: await getS3Client(supplier),
+                params: {
+                    Bucket: bucketName,
+                    Key: objectKey,
+                    Body: fileStream,
+                    ContentType: file.mimetype,
+                    StorageClass: storage
+                },
+                queueSize: 4,
+                partSize: 5 * 1024 * 1024,
+                leavePartsOnError: false
+            });
+
+            let counter = 1;
+
+            upload.on("httpUploadProgress", (progress) => {
+                const percent = ((progress.loaded / file.Size) * 100).toFixed(2);
+                console.log(`Part ${counter++} => Progresso: ${percent}%`);
+            });
+
+            await upload.done();
+
+            return module.exports.getObjectInfo({ supplier, bucketName, objectKey });
+        } catch (error) {
+            return { error };
         }
     }
 };

@@ -30,8 +30,8 @@ module.exports = {
         return myObject;
     },
 
-    async uploadObject(bucketName, objectKey, file) {
-        const myObject = await awsService.uploadObject(bucketName, objectKey, file);
+    async uploadObject(options) {
+        const myObject = await awsService.uploadObjectMP(options);
         return myObject;
     }
 
