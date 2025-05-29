@@ -136,4 +136,4 @@ dist
 .pnp.*
 
 # dev
-temp/*
+temp/
