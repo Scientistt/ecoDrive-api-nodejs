@@ -2,6 +2,7 @@ const accountService = require("../service/account.service");
 const { end } = require("../../utils/request.service");
 const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 const constantsService = require("../../utils/constants.service");
+const { sendMail } = require("../../utils/mailsend.service");
 
 const UserSchema = require("../../utils/schema/User");
 
@@ -105,6 +106,24 @@ module.exports = {
 
         req.response.meta.feedback = FEEDBACK.CREATED;
         req.response.body.user = user;
+        //console.log("User created: ", user);
+
+        // Envia email de boas-vindas após a criação da conta
+        const mailOptions = {
+            from: `"Equipe EcoDrive" <ti@novotemposupermercados.com.br>`,
+            to: user.email,
+            subject: `Seja muito bem-vindo ao EcoDrive, ${user.name}!`,
+            text: `Olá ${user.name},\n\nBem-vindo ao EcoDrive! Sua conta foi criada com sucesso.\n\n Seu login é ${user.login}\n\nAtenciosamente,\nEquipe EcoDrive`
+        };
+        try {
+            await sendMail(mailOptions);
+            console.log("Welcome email sent to: ", user.email);
+        } catch (error) {
+            console.error("Erro ao enviar email: ", error);
+            req.response.meta.feedback = FEEDBACK.INTERNAL_ERROR;
+            req.response.body.user = { error: "Failed to send welcome email." };
+            return end(req, res);
+        }
         return next();
     }
 };
