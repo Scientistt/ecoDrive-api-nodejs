@@ -96,6 +96,7 @@ module.exports = {
     },
 
     async uploadObject(req, res, next) {
+        console.log("Aqui foi!");
         if (!req.file) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
             req.response.meta.error = new Error("Invalid file");
