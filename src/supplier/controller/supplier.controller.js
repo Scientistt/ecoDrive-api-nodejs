@@ -66,6 +66,8 @@ module.exports = {
             return end(req, res);
         }
 
+        console.log("Vamos fazer o upload?");
+
         req.response.meta.feedback = FEEDBACK.READ;
         req.response.params.supplier = supplier;
         return next();
