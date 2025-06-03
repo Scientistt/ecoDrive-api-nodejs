@@ -2,6 +2,8 @@ const objectService = require("../service/object.service");
 const { end } = require("../../utils/request.service");
 const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 
+const ObjectSchema = require("../../utils/schema/Object");
+const DEFAULT_AUTH_URL_DURATION_IN_SECONDS = 1800;
 const fs = require("fs");
 
 module.exports = {
@@ -25,7 +27,11 @@ module.exports = {
     },
 
     async getObjectInfo(req, res, next) {
-        const buckets = await objectService.getObjectInfo(req.params.bucketName, req.params.objectKey);
+        const buckets = await objectService.getObjectInfo({
+            supplier: req.response.params.supplier,
+            bucketName: req.params.bucketName,
+            objectKey: req.params.objectKey
+        });
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -53,7 +59,12 @@ module.exports = {
     },
 
     async restoreObject(req, res, next) {
-        const buckets = await objectService.restoreObject(req.params.bucketName, req.params.objectKey, req.body);
+        const buckets = await objectService.restoreObject(
+            req.response.params.supplier,
+            req.params.bucketName,
+            req.params.objectKey,
+            req.body
+        );
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -66,7 +77,12 @@ module.exports = {
     },
 
     async downloadObject(req, res, next) {
-        const buckets = await objectService.downloadObject(req.params.bucketName, req.params.objectKey, req.body);
+        const buckets = await objectService.downloadObject({
+            supplier: req.response.params.supplier,
+            bucketName: req.params.bucketName,
+            objectKey: req.params.objectKey,
+            expiresInSeconds: DEFAULT_AUTH_URL_DURATION_IN_SECONDS
+        });
 
         if (buckets.error) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
@@ -80,19 +96,30 @@ module.exports = {
     },
 
     async uploadObject(req, res, next) {
+        console.log("Aqui foi!");
         if (!req.file) {
             req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
             req.response.meta.error = new Error("Invalid file");
             return end(req, res);
         }
 
-        const { bucket, name } = req.body;
+        // const { bucket, name } = req.body;
+
+        const validatedObject = ObjectSchema.validate({ ...req.body });
+
+        if (!validatedObject.success) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.user = { error: validatedObject.err };
+            return end(req, res);
+        }
+
         const file = req.file;
 
-        const buckets = await objectService.getObjectInfo(
-            req.params.bucketName,
-            Buffer.from(name).toString("base64").replace(/=/g, "")
-        );
+        const buckets = await objectService.getObjectInfo({
+            supplier: req.response.params.supplier,
+            bucketName: req.params.bucketName,
+            objectKey: Buffer.from(validatedObject.data.name).toString("base64").replace(/=/g, "")
+        });
 
         if (!buckets.error) {
             fs.unlinkSync(file.path);
@@ -102,7 +129,13 @@ module.exports = {
             return end(req, res);
         }
 
-        const object = await objectService.uploadObject(bucket, name, file);
+        const object = await objectService.uploadObject({
+            supplier: req.response.params.supplier,
+            bucketName: req.params.bucketName,
+            objectKey: validatedObject.data.name,
+            file,
+            storage: validatedObject.data.storage
+        });
 
         fs.unlinkSync(file.path);
 

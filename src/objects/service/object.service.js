@@ -6,9 +6,9 @@ module.exports = {
         return myObject;
     },
 
-    async getObjectInfo(bucketName, objectKey) {
-        const decodedKey = Buffer.from(objectKey, "base64").toString("utf-8");
-        const myObject = await awsService.getObjectInfo(bucketName, decodedKey);
+    async getObjectInfo(options) {
+        const decodedKey = Buffer.from(options.objectKey, "base64").toString("utf-8");
+        const myObject = await awsService.getObjectInfo({ ...options, objectKey: decodedKey });
         return myObject;
     },
 
@@ -18,20 +18,20 @@ module.exports = {
         return myObject;
     },
 
-    async restoreObject(bucketName, objectKey, params) {
+    async restoreObject(supplier, bucketName, objectKey, params) {
         const decodedKey = Buffer.from(objectKey, "base64").toString("utf-8");
-        const myObject = await awsService.restoreObject(bucketName, decodedKey, params);
+        const myObject = await awsService.restoreObject({ supplier, bucketName, objectKey: decodedKey, ...params });
         return myObject;
     },
 
-    async downloadObject(bucketName, objectKey, params) {
-        const decodedKey = Buffer.from(objectKey, "base64").toString("utf-8");
-        const myObject = await awsService.downloadObject(bucketName, decodedKey, params);
+    async downloadObject(options) {
+        const decodedKey = Buffer.from(options.objectKey, "base64").toString("utf-8");
+        const myObject = await awsService.downloadObject({ ...options, objectKey: decodedKey });
         return myObject;
     },
 
-    async uploadObject(bucketName, objectKey, file) {
-        const myObject = await awsService.uploadObject(bucketName, objectKey, file);
+    async uploadObject(options) {
+        const myObject = await awsService.uploadObjectMultiPart(options);
         return myObject;
     }
 
