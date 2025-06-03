@@ -6,6 +6,8 @@ const {
     validateAccountCreationVoucher,
     validateAccountCreationEmail,
     validateAccountCreationLogin,
+    resetPassword,
+    forgotPassword,
     createAccount
 } = require("../controller/account.controller");
 
@@ -14,6 +16,10 @@ method.post(`/account/validate/voucher`, init, validateAccountCreationVoucher, e
 method.post(`/account/validate/email`, init, validateAccountCreationEmail, end);
 
 method.post(`/account/validate/login`, init, validateAccountCreationLogin, end);
+
+method.post(`/account/reset-password`, init, resetPassword, end);
+
+method.post(`/account/forgot-password`, init, forgotPassword, end);
 
 method.post(`/account`, init, validateAccountCreationVoucher, createAccount, end);
 

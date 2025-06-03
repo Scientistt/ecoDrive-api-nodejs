@@ -19,8 +19,19 @@ const { env } = require("process");
 
 const paginationService = require("./pagination.service");
 
+const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : "us-east-2";
+const AWS_ACCESS_KEY = env.AWS_ACCESS_KEY ? env.AWS_ACCESS_KEY : "us-east-1";
+const AWS_SECRET_ACCESS_KEY = env.AWS_SECRET_ACCESS_KEY ? env.AWS_SECRET_ACCESS_KEY : "us-east-1";
+
+const s3Client = new S3Client({
+    region: AWS_REGION,
+    credentials: {
+        accessKeyId: AWS_ACCESS_KEY,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY
+    }
+});
+
 // ToDo: Save region on the supplier
-const AWS_REGION = env.AWS_REGION ? env.AWS_REGION : "us-east-1";
 
 const getBucketLocation = async (supplier, bucketName) => {
     try {
