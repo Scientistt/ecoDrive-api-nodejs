@@ -40,6 +40,7 @@ module.exports = {
     },
 
     async end(req, res) {
+        //console.log("Response: ", req.response);
         const initialTime = process.hrtime(req.response.meta.timeSpent);
         req.response.meta.timeSpent = Math.round((initialTime[0] + initialTime[1] / 1e9 + Number.EPSILON) * 1e3) / 1e3;
 

@@ -54,6 +54,7 @@ model User {
   status        StatusEnum @default(A)
   password      String
   email         String     @unique()
+  reset_token String?
   whitelabel_id BigInt
 
   whitelabel WhiteLabel @relation(fields: [whitelabel_id], references: [id], name: "User_WhiteLabel")
@@ -62,6 +63,7 @@ model User {
   account         Supplier[]      @relation(name: "Supplier_User")
   account_created Supplier[]      @relation(name: "SupplierCreatedBy_User")
   account_updated Supplier[]      @relation(name: "SupplierUpdatedBy_User")
+  passwordResets  PasswordReset[] @relation(name: "PasswordReset_User")
 
   @@index([login])
   @@index([status])
@@ -119,6 +121,23 @@ model Supplier {
   @@index([name])
   @@index([status])
   @@map("ecodrive_supplier")
+}
+
+model PasswordReset {
+  id         BigInt     @id() @unique() @default(autoincrement())
+  slug       String     @unique() @default(uuid())
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?  @db.Timestamptz(6)
+  user_id    BigInt
+  token      String     @unique()
+  status     StatusEnum @default(A)
+
+  user User @relation(fields: [user_id], references: [id], name: "PasswordReset_User")
+
+  @@index([user_id])
+  @@index([token])
+  @@index([status])
+  @@map("ecodrive_password_reset")
 }
 
 /**
