@@ -26,8 +26,8 @@ module.exports = {
         response.totalElements =
             pgnation.limit === 0
                 ? obj.elements.length
-                : Object.prototype.hasOwnProperty.call(obj.elements[0] || {}, "_count")
-                  ? obj.elements[0]._count
+                : Object.prototype.hasOwnProperty.call(obj || {}, "total")
+                  ? obj.total
                   : obj.elements.length;
         response.limit = pgnation.limit === 0 ? obj.elements.length : pgnation.limit;
         response.totalPages = pgnation.limit === 0 ? 1 : Math.ceil(response.totalElements / pgnation.limit);

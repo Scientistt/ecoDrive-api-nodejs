@@ -1,9 +1,27 @@
-const { parsePagination } = require("../../utils/pagination.service");
+const { parsePagination, parseListToPagination } = require("../../utils/pagination.service");
 const { getJWT, isJWTValid } = require("../../utils/token.service");
 const { encrypt2, decrypt2 } = require("../../utils/cryptography.service");
 const { db, parseError } = require("../../utils/db.service");
+const { getId } = require("../../utils/id.service");
 
 module.exports = {
+    async validateSupplierSlug(id, slug) {
+        try {
+            const supp = await db.Supplier.findFirst({
+                where: {
+                    slug
+                },
+                select: {
+                    id: true
+                }
+            });
+
+            return !supp || supp.id.toString() === id;
+        } catch (err) {
+            return parseError(err);
+        }
+    },
+
     async createSupplier(supplier, req) {
         try {
             const newSupplier = await db.Supplier.create({
@@ -53,7 +71,17 @@ module.exports = {
                 }
             });
 
-            return { elements: newSupplier };
+            const counter = await db.Supplier.count({
+                where: {
+                    ...filter,
+                    user_id: req.response.params.user.id,
+                    status: "A"
+                }
+            });
+
+            return parseListToPagination(paginationObj, { elements: newSupplier, total: counter });
+
+            // return { elements: newSupplier };
         } catch (err) {
             return parseError(err);
         }
@@ -61,9 +89,13 @@ module.exports = {
 
     async getSupplier(slug) {
         try {
+            const isNumericId = !isNaN(Number(slug));
+
             const newSupplier = await db.Supplier.findFirst({
                 where: {
-                    slug,
+                    ...(isNumericId
+                        ? { OR: [{ id: Number(slug) }, { slug: slug.toString() }] }
+                        : { slug: slug.toString() }),
                     status: "A"
                 },
                 select: {
@@ -75,6 +107,39 @@ module.exports = {
                     account_supplier: true
                 }
             });
+            if (!newSupplier)
+                throw {
+                    code: "P2025",
+                    message: "Supplier inválido"
+                };
+            return newSupplier;
+        } catch (err) {
+            return parseError(err);
+        }
+    },
+
+    async deleteSupplier(id, req) {
+        try {
+            const sup = await module.exports.getSupplier(id);
+
+            if (sup.error) return sup;
+
+            const newSupplier = await db.Supplier.update({
+                where: {
+                    id,
+                    status: "A"
+                },
+                select: {
+                    id: true
+                },
+                data: {
+                    updated_at: new Date(),
+                    updated_by_user_id: req.response.params.user.id,
+                    status: "D",
+                    slug: `${sup}-DELETED-${getId()}`
+                }
+            });
+
             if (!newSupplier)
                 throw {
                     code: "P2025",

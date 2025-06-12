@@ -7,7 +7,7 @@ const supplierSchema = z.object({
     description: z.string().optional(),
     slug: z
         .string()
-        .min(3, "O slug deve ter pelo menos 3 caracteres.")
+        .min(1, "O slug não pode ser vazio")
         .max(50, "O slug deve ter no máximo 50 caracteres.")
         .regex(/^[a-z0-9-]+$/, "O slug deve conter apenas letras minúsculas, números e hífens."),
     account_supplier: z.string().superRefine((sup, ctx) => {

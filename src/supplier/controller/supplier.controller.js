@@ -5,6 +5,34 @@ const FEEDBACK = require("../../utils/feedback.service").getFeedbacks();
 const SupplierSchema = require("../../utils/schema/Supplier");
 
 module.exports = {
+    async validateSupplierSlug(req, res, next) {
+        const validatedSupplier = SupplierSchema.validate({
+            slug: req.params.supplierSlug,
+            name: "decoy",
+            description: "decoy",
+            account_supplier: "aws",
+            account_key: "x",
+            account_secret: "y"
+        });
+
+        if (!validatedSupplier.success) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.user = { error: validatedSupplier.err };
+            return end(req, res);
+        }
+
+        const supplier = await supplierService.validateSupplierSlug(req.params.supplierId, validatedSupplier.data.slug);
+
+        if (!supplier) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.supplier = { error: supplier.error };
+            return end(req, res);
+        }
+
+        req.response.meta.feedback = FEEDBACK.OK;
+        return next();
+    },
+
     async createSupplier(req, res, next) {
         const validatedSupplier = SupplierSchema.validate({
             ...req.body
@@ -66,10 +94,22 @@ module.exports = {
             return end(req, res);
         }
 
-        console.log("Vamos fazer o upload?");
-
         req.response.meta.feedback = FEEDBACK.READ;
         req.response.params.supplier = supplier;
+        return next();
+    },
+
+    async deleteSupplier(req, res, next) {
+        const supplier = await supplierService.deleteSupplier(req.params.supplierId, req);
+
+        if (supplier.error) {
+            req.response.meta.feedback = FEEDBACK.BAD_REQUEST;
+            req.response.body.supplier = { error: supplier.error };
+            return end(req, res);
+        }
+
+        req.response.meta.feedback = FEEDBACK.READ;
+        // req.response.body.supplier = supplier;
         return next();
     }
 };
